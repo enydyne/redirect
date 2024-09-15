@@ -26,7 +26,7 @@ func init() {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		line := scanner.Text()
+		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
 			continue
 		}
@@ -34,8 +34,11 @@ func init() {
 		if len(parts) != 2 {
 			panic(fmt.Errorf("invalid line: %s", line))
 		}
-		url := parts[1]
-		id := parts[0]
+		url := strings.TrimSpace(parts[1])
+		id := strings.TrimSpace(parts[0])
+		if id == "" || url == "" {
+			panic(fmt.Errorf("invalid line format: %s", line))
+		}
 		Redirects[id] = url
 		urlsHtml.WriteString(fmt.Sprintf("<tr><td>%s</td><td><a href=%q><code>%s</code></a></td></tr>", id, url, url))
 	}
