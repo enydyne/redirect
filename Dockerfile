@@ -1,6 +1,12 @@
-FROM golang:latest as build
-COPY . /app
+FROM golang:latest AS build
 WORKDIR /app
+COPY . .
 RUN go mod tidy
-RUN go build -o main .
-ENTRYPOINT ["/app/main"]
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+
+FROM scratch
+WORKDIR /
+COPY --from=build /app/main .
+COPY --from=build /app/urls.txt .
+EXPOSE 8080
+ENTRYPOINT ["/main"]
