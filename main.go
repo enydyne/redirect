@@ -9,7 +9,10 @@ import (
 	"strings"
 )
 
-var Redirects = map[string]string{}
+var (
+	Redirects     = map[string]string{}
+	RedirectsHtml []byte
+)
 
 func init() {
 	file, err := os.Open("urls.txt")
@@ -17,6 +20,9 @@ func init() {
 		panic(err)
 	}
 	defer file.Close()
+
+	urlsHtml := strings.Builder{}
+	urlsHtml.WriteString(`<!doctype html><html><head><meta charset="UTF-8"><meta content="width=device-width, initial-scale=1" name="viewport"><title>Redirect</title></head><body><table><tbody><tr><th>ID</th><th>Target URL</th></tr>`)
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -28,12 +34,19 @@ func init() {
 		if len(parts) != 2 {
 			panic(fmt.Errorf("invalid line: %s", line))
 		}
-		Redirects[parts[0]] = parts[1]
+		url := parts[1]
+		id := parts[0]
+		Redirects[id] = url
+		urlsHtml.WriteString(fmt.Sprintf("<tr><td>%s</td><td><a href=%q><code>%s</code></a></td></tr>", id, url, url))
 	}
 
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
+
+	urlsHtml.WriteString("</tbody></table></body></html>")
+
+	RedirectsHtml = []byte(urlsHtml.String())
 }
 
 func main() {
@@ -77,5 +90,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.NotFound(w, r)
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusNotFound)
+	_, _ = w.Write(RedirectsHtml)
 }
