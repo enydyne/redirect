@@ -1,4 +1,5 @@
 from jinja2 import Environment, FileSystemLoader
+import re
 import os
 
 templates_env = Environment(
@@ -13,6 +14,7 @@ with open("./docker-compose.yml", "w") as f:
     refName = os.getenv("GITHUB_REF")
     if not refName:
         raise ValueError("GITHUB_REF not set")
+    refName = re.sub(r"/", "_", refName)
 
     repository = os.getenv("GITHUB_REPOSITORY")
     if not repository:
