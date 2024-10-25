@@ -12,6 +12,22 @@ permissions:
   contents: read
 
 jobs:
+  build-templates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install jinja2
+        run: pip install jinja2
+      - name: Generate docker-compose.yml
+        run: |
+          cd build
+          python ./template.py
+      - name: Upload docker-compose.yml
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-compose.yml
+          path: build/docker-compose.yml
   deploy:
     runs-on: ubuntu-latest
     steps:
@@ -33,6 +49,11 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
+      - name: Download docker-compose.yml
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-compose.yml
+          path: .
       - name: copy files via ssh password
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -40,7 +61,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
-          source: "docker-compose.yml,docker-compose.yml"
+          source: "docker-compose.yml"
           target: /home/enydyne/redirect
           rm: true
           debug: true
