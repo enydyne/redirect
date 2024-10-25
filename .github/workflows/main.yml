@@ -21,20 +21,21 @@ jobs:
         uses: actions/checkout@v4
       - name: Create Compose Overwrite
         run: |
-          echo "services:" > docker-compose.override.yml
-          echo "  redirect:" >> docker-compose.override.yml
-          echo "    image: ghcr.io/${{ github.repository }}:${{ github.sha }}" >> docker-compose.override.yml
-          echo "    labels:" >> docker-compose.override.yml
-          echo "      - traefik.enable=true" >> docker-compose.override.yml
-          echo "      - traefik.http.routers.${{ github.ref_name }}-redirect.rule=Host(\`${{ secrets.DOMAIN }}\`)" >> docker-compose.override.yml
-          echo "      - traefik.http.services.${{ github.ref_name }}-redirect.loadbalancer.server.port=80" >> docker-compose.override.yml
-          echo "      - traefik.http.routers.${{ github.ref_name }}-redirect.entrypoints=websecure" >> docker-compose.override.yml
-          echo "      - traefik.http.routers.${{ github.ref_name }}-redirect.tls.certresolver=${{ secrets.CERT_RESOLVER }}" >> docker-compose.override.yml
-          echo "    networks:" >> docker-compose.override.yml
-          echo "      - traefik_network" >> docker-compose.override.yml
-          echo "    networks:" >> docker-compose.override.yml
-          echo "      traefik_network:" >> docker-compose.override.yml
-          echo "        external: true" >> docker-compose.override.yml
+          echo 'services:' > docker-compose.yml
+          echo '  redirect:' >> docker-compose.yml
+          echo '    image: ghcr.io/${{ github.repository }}:${{ github.sha }}' >> docker-compose.yml
+          echo '    environment:' >> docker-compose.yml
+          echo '      - PORT=80' >> docker-compose.yml
+          echo '    labels:' >> docker-compose.yml
+          echo '      - traefik.enable=true' >> docker-compose.yml
+          echo '      - traefik.http.routers.${{ github.ref_name }}-redirect.rule=Host(`${{ secrets.DOMAIN }}`)' >> docker-compose.yml
+          echo '      - traefik.http.services.${{ github.ref_name }}-redirect.loadbalancer.server.port=80' >> docker-compose.yml
+          echo '      - traefik.http.routers.${{ github.ref_name }}-redirect.entrypoints=websecure' >> docker-compose.yml
+          echo '      - traefik.http.routers.${{ github.ref_name }}-redirect.tls.certresolver=${{ secrets.CERT_RESOLVER }}' >> docker-compose.yml
+          echo '      - traefik.docker.network=traefik_network' >> docker-compose.yml
+          echo 'networks:' >> docker-compose.yml
+          echo '  traefik_network:' >> docker-compose.yml
+          echo '    external: true' >> docker-compose.yml
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Login to Docker Hub
@@ -56,7 +57,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
-          source: "docker-compose.yml,docker-compose.override.yml"
+          source: "docker-compose.yml,docker-compose.yml"
           target: /home/enydyne/redirect
           rm: true
           debug: true
@@ -73,8 +74,8 @@ jobs:
             export SERVER_TAG=${{ github.sha }}
             echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u "tsukinoko-kun" --password-stdin
             docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
-            docker compose -f docker-compose.yml -f docker-compose.override.yml down --remove-orphans || true
-            docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
+            docker compose down --remove-orphans || true
+            docker compose up -d
       - name: Discord Webhook Action
         uses: tsickert/discord-webhook@v5.3.0
         with:

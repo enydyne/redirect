@@ -1,5 +1,0 @@
-services:
-  server:
-    image: ghcr.io/dineup-gastro/redirect:${SERVER_TAG}
-    environment:
-      - PORT=80
