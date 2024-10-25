@@ -19,23 +19,6 @@ jobs:
         run: nc -zv ${{ secrets.HOST }} ${{ secrets.PORT }}
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Create Compose Overwrite
-        run: |
-          echo 'services:' > docker-compose.yml
-          echo '  redirect:' >> docker-compose.yml
-          echo '    image: ghcr.io/${{ github.repository }}:${{ github.sha }}' >> docker-compose.yml
-          echo '    environment:' >> docker-compose.yml
-          echo '      - PORT=80' >> docker-compose.yml
-          echo '    labels:' >> docker-compose.yml
-          echo '      - traefik.enable=true' >> docker-compose.yml
-          echo '      - traefik.http.routers.${{ github.ref_name }}-redirect.rule=Host(`${{ secrets.DOMAIN }}`)' >> docker-compose.yml
-          echo '      - traefik.http.services.${{ github.ref_name }}-redirect.loadbalancer.server.port=80' >> docker-compose.yml
-          echo '      - traefik.http.routers.${{ github.ref_name }}-redirect.entrypoints=websecure' >> docker-compose.yml
-          echo '      - traefik.http.routers.${{ github.ref_name }}-redirect.tls.certresolver=${{ secrets.CERT_RESOLVER }}' >> docker-compose.yml
-          echo '      - traefik.docker.network=traefik_network' >> docker-compose.yml
-          echo 'networks:' >> docker-compose.yml
-          echo '  traefik_network:' >> docker-compose.yml
-          echo '    external: true' >> docker-compose.yml
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Login to Docker Hub
@@ -71,7 +54,10 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             cd /home/enydyne/redirect
+            export REPOSITORY=${{ github.repository }}
             export SERVER_TAG=${{ github.sha }}
+            export REF_NAME=${{ github.ref }}
+            export DOMAIN=${{ secrets.DOMAIN }}
             echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u "tsukinoko-kun" --password-stdin
             docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
             docker compose down --remove-orphans || true
