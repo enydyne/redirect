@@ -17,16 +17,24 @@ jobs:
     steps:
       - name: Test SSH connection
         run: nc -zv ${{ secrets.HOST }} ${{ secrets.PORT }}
-      - name: Test SSH login
-        uses: appleboy/ssh-action@v1.1.0
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          port: ${{ secrets.PORT }}
-          script: whoami
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Create Compose Overwrite
+        run: |
+          echo "services:" > docker-compose.override.yml
+          echo "  redirect:" >> docker-compose.override.yml
+          echo "    image: ghcr.io/${{ github.repository }}:${{ github.sha }}" >> docker-compose.override.yml
+          echo "    labels:" >> docker-compose.override.yml
+          echo "      - traefik.enable=true" >> docker-compose.override.yml
+          echo "      - traefik.http.routers.${{ github.ref_name }}-redirect.rule=Host(\`${{ secrets.DOMAIN }}\`)" >> docker-compose.override.yml
+          echo "      - traefik.http.services.${{ github.ref_name }}-redirect.loadbalancer.server.port=80" >> docker-compose.override.yml
+          echo "      - traefik.http.routers.${{ github.ref_name }}-redirect.entrypoints=websecure" >> docker-compose.override.yml
+          echo "      - traefik.http.routers.${{ github.ref_name }}-redirect.tls.certresolver=${{ secrets.CERT_RESOLVER }}" >> docker-compose.override.yml
+          echo "    networks:" >> docker-compose.override.yml
+          echo "      - traefik_network" >> docker-compose.override.yml
+          echo "    networks:" >> docker-compose.override.yml
+          echo "      traefik_network:" >> docker-compose.override.yml
+          echo "        external: true" >> docker-compose.override.yml
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Login to Docker Hub
@@ -48,7 +56,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
-          source: "docker-compose.yml"
+          source: "docker-compose.yml,docker-compose.override.yml"
           target: /home/enydyne/redirect
           rm: true
           debug: true
@@ -65,13 +73,8 @@ jobs:
             export SERVER_TAG=${{ github.sha }}
             echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u "tsukinoko-kun" --password-stdin
             docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
-            docker compose down
-            docker compose \
-              --label "traefik.enable=true" \
-              --label "traefik.http.routers.app.rule=Host(`${{ secrets.DOMAIN }}`)" \
-              --label "traefik.http.routers.app.entrypoints=websecure" \
-              --label "traefik.http.routers.app.tls.certresolver=${{ secrets.CERT_RESOLVER }}" \
-              up -d
+            docker compose -f docker-compose.yml -f docker-compose.override.yml down --remove-orphans || true
+            docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
       - name: Discord Webhook Action
         uses: tsickert/discord-webhook@v5.3.0
         with:
