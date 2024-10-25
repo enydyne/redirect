@@ -27,12 +27,11 @@ jobs:
           DOMAIN: ${{ secrets.DOMAIN }}
         run: |
           cd build
-          env
           python ./template.py
       - name: Upload docker-compose.yml
         uses: actions/upload-artifact@v4
         with:
-          name: docker-compose.yml
+          name: docker-compose
           path: build/docker-compose.yml
   deploy:
     runs-on: ubuntu-latest
@@ -59,8 +58,10 @@ jobs:
       - name: Download docker-compose.yml
         uses: actions/download-artifact@v4
         with:
-          name: docker-compose.yml
-          path: .
+          name: docker-compose
+          path: ./build
+      - name: Move docker-compose.yml
+        run: mv ./build/docker-compose.yml ./docker-compose.yml
       - name: copy files via ssh password
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -68,10 +69,9 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
-          source: "docker-compose.yml"
+          source: "./docker-compose.yml"
           target: /home/enydyne/redirect
           rm: true
-          debug: true
           overwrite: true
       - name: executing remote ssh commands using password
         uses: appleboy/ssh-action@v1.1.0
