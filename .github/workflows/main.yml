@@ -65,12 +65,13 @@ jobs:
             export SERVER_TAG=${{ github.sha }}
             echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u "tsukinoko-kun" --password-stdin
             docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
-            docker-compose down
-            docker compose up -d \
+            docker compose down
+            docker compose \
               --label "traefik.enable=true" \
               --label "traefik.http.routers.app.rule=Host(`${{ secrets.DOMAIN }}`)" \
               --label "traefik.http.routers.app.entrypoints=websecure" \
-              --label "traefik.http.routers.app.tls.certresolver=${{ secrets.CERT_RESOLVER }}"
+              --label "traefik.http.routers.app.tls.certresolver=${{ secrets.CERT_RESOLVER }}" \
+              up -d
       - name: Discord Webhook Action
         uses: tsickert/discord-webhook@v5.3.0
         with:
