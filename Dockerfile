@@ -8,5 +8,4 @@ FROM scratch
 WORKDIR /
 COPY --from=build /app/main .
 COPY --from=build /app/urls.txt .
-EXPOSE 8080
 ENTRYPOINT ["/main"]

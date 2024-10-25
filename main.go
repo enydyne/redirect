@@ -12,6 +12,7 @@ import (
 var (
 	Redirects     = map[string]string{}
 	RedirectsHtml []byte
+	Addr          = ":4321"
 )
 
 func init() {
@@ -20,6 +21,10 @@ func init() {
 		panic(err)
 	}
 	defer file.Close()
+
+	if port, ok := os.LookupEnv("PORT"); ok {
+		Addr = fmt.Sprintf(":%s", port)
+	}
 
 	urlsHtml := strings.Builder{}
 	urlsHtml.WriteString(`<!doctype html><html><head><meta charset="UTF-8"><meta content="width=device-width, initial-scale=1" name="viewport"><title>Redirect</title></head><body><table><tbody><tr><th>ID</th><th>Target URL</th></tr>`)
@@ -81,7 +86,7 @@ func main() {
 
 	} else {
 		http.HandleFunc("/", handle)
-		if err := http.ListenAndServe(":8080", nil); err != nil {
+		if err := http.ListenAndServe(Addr, nil); err != nil {
 			panic(err)
 		}
 	}

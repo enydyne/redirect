@@ -1,0 +1,65 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: https://ghcr.io
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          file: ./Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
+      - name: copy files via ssh password
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          source: "docker-compose.yaml"
+          target: /home/enydyne/redirect
+      - name: executing remote ssh commands using password
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd /home/enydyne/redirect
+            export SERVER_TAG=${{ github.sha }}
+            echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u "tsukinoko-kun" --password-stdin
+            docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
+            docker-compose down
+            docker compose up -d \
+              --label "traefik.enable=true" \
+              --label "traefik.http.routers.app.rule=Host(`${{ secrets.HOST }}`)" \
+              --label "traefik.http.routers.app.entrypoints=websecure" \
+              --label "traefik.http.routers.app.tls.certresolver=${{ secrets.CERT_RESOLVER }}"
+      - name: Discord Webhook Action
+        uses: tsickert/discord-webhook@v5.3.0
+        with:
+          webhook-url: ${{ secrets.DC_WEBHOOK }}
+          content: "Deployed redirect image with tag ${{ github.sha }} to ${{ secrets.HOST }}"
