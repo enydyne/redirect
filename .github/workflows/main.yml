@@ -40,6 +40,9 @@ jobs:
           port: ${{ secrets.PORT }}
           source: "docker-compose.yml"
           target: /home/enydyne/redirect
+          rm: true
+          debug: true
+          overwrite: true
       - name: executing remote ssh commands using password
         uses: appleboy/ssh-action@v1.1.0
         with:
