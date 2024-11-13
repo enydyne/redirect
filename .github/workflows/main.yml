@@ -49,6 +49,8 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: https://ghcr.io
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
