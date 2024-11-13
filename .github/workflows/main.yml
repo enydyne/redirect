@@ -55,6 +55,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
+          platforms: linux/amd64,linux/arm64
       - name: Download docker-compose.yml
         uses: actions/download-artifact@v4
         with:
