@@ -34,7 +34,7 @@ jobs:
           name: docker-compose
           path: build/docker-compose.yml
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     needs: build-templates
     steps:
       - name: Test SSH connection
